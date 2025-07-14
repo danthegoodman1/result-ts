@@ -1,0 +1,49 @@
+{
+  "name": "result-ts",
+  "version": "0.0.1",
+  "type": "module",
+  "description": "Rust-style Result type for TypeScript",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "keywords": [
+    "result",
+    "error-handling",
+    "rust",
+    "functional-programming",
+    "typescript",
+    "type-safe"
+  ],
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "~5.8.0",
+    "vitest": "^3.2.4"
+  },
+  "scripts": {
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "test": "vitest"
+  },
+  "author": "danthegoodman1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/danthegoodman1/result-ts"
+  },
+  "homepage": "https://github.com/danthegoodman1/result-ts#readme",
+  "bugs": {
+    "url": "https://github.com/danthegoodman1/result-ts/issues"
+  },
+  "license": "ISC"
+}
