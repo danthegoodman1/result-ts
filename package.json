@@ -1,6 +1,6 @@
 {
   "name": "@danthegoodman/result-ts",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "type": "module",
   "description": "Rust-style Result type for TypeScript",
   "main": "dist/index.js",
