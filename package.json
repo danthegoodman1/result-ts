@@ -1,5 +1,5 @@
 {
-  "name": "result-ts",
+  "name": "@danthegoodman/result-ts",
   "version": "0.0.1",
   "type": "module",
   "description": "Rust-style Result type for TypeScript",
@@ -34,7 +34,8 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "prepublishOnly": "npm run build",
-    "test": "vitest"
+    "test": "vitest",
+    "pub": "npm publish --access public"
   },
   "author": "danthegoodman1",
   "repository": {
