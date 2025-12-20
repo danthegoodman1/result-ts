@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { Ok, Err, type Result, match, trace } from "./index.js"
+import { Ok, Err, type Result, match, trace, map, mapErr } from "./index.js"
 
 describe("Result", () => {
   it("should chain errors", () => {
@@ -142,5 +142,25 @@ describe("Result", () => {
 
     // Error value should be preserved
     expect(continuedResult.Err).toEqual({ code: "SERVICE_A_ERROR", message: "Something went wrong in A" })
+  })
+
+  it("map transforms Ok value", () => {
+    const ok = Ok(5)
+    const mapped = map(ok, (x) => Ok(x * 2))
+    expect(mapped.isOk && mapped.Ok).toBe(10)
+
+    const err = Err<Error, number>(new Error("fail"))
+    const mappedErr = map(err, (x) => Ok(x * 2))
+    expect(mappedErr.isErr).toBe(true)
+  })
+
+  it("mapErr transforms Err value", () => {
+    const err = Err<string, number>("original error")
+    const mapped = mapErr(err, () => Ok(42))
+    expect(mapped.isOk && mapped.Ok).toBe(42)
+
+    const ok = Ok<number, string>(5)
+    const mappedOk = mapErr(ok, () => Err("new error"))
+    expect(mappedOk.isOk && mappedOk.Ok).toBe(5)
   })
 })

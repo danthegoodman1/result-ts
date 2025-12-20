@@ -119,4 +119,6 @@ if (someResult.isErr) {
 - `unwrap(result)` - Get the Ok value or throw
 - `unwrapErr(result)` - Get the Err value or throw
 - `match(result, { Ok, Err })` - Pattern match on the result
+- `map(result, fn)` - Transform the Ok value with a function returning Result
+- `mapErr(result, fn)` - Transform the Err value with a function returning Result
 - `trace(result)` - Get the call site trace for an error

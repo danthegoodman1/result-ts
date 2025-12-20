@@ -201,6 +201,34 @@ export function match<O, E, T>(
 }
 
 /**
+ * Maps a `Result<O, E>` to `Result<U, E>` by applying a function to the contained Ok value.
+ * If the result is Err, returns the Err unchanged.
+ */
+export function map<O, E, U>(
+  result: Result<O, E>,
+  fn: (value: O) => Result<U, E>
+): Result<U, E> {
+  if (result.isOk) {
+    return fn(result.Ok)
+  }
+  return result
+}
+
+/**
+ * Maps a `Result<O, E>` to `Result<O, F>` by applying a function to the contained Err value.
+ * If the result is Ok, returns the Ok unchanged.
+ */
+export function mapErr<O, E, F>(
+  result: Result<O, E>,
+  fn: (error: E) => Result<O, F>
+): Result<O, F> {
+  if (result.isErr) {
+    return fn(result.Err)
+  }
+  return result
+}
+
+/**
  * Wraps a function in a try/catch block and returns a Result.
  *
  * @param fn - The function to wrap.
