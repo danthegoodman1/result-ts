@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { Ok, Err, type Result } from "./index.js"
+import { Ok, Err, type Result, match, trace } from "./index.js"
 
 describe("Result", () => {
   it("should chain errors", () => {
@@ -16,7 +16,7 @@ describe("Result", () => {
       const err = res.Err
     }
 
-    const matched = res.match({
+    const matched = match(res, {
       Ok: (value) => value,
       Err: (_error) => -1,
     })
@@ -39,9 +39,9 @@ describe("Result", () => {
       if (layer1.isOk) {
         throw new Error("Expected Err, got Ok")
       }
-      const trace = layer1.trace()
+      const errorTrace = trace(layer1)
       console.log("Error:", layer1.Err.message)
-      console.log("Trace:", trace)
+      console.log("Trace:", errorTrace)
     }
 
     /////// Expected output: ///////
@@ -64,5 +64,83 @@ describe("Result", () => {
     //     line: 38
     //   }
     // ]
+  })
+
+  it("should be JSON serializable", () => {
+    const okResult = Ok(42)
+    const errResult = Err(new Error("test error"))
+
+    const okJson = JSON.stringify(okResult)
+    const errJson = JSON.stringify(errResult)
+
+    expect(JSON.parse(okJson)).toEqual({
+      isOk: true,
+      isErr: false,
+      Ok: 42,
+      Err: undefined,
+    })
+
+    const parsedErr = JSON.parse(errJson)
+    expect(parsedErr.isOk).toBe(false)
+    expect(parsedErr.isErr).toBe(true)
+    expect(parsedErr.Ok).toBeUndefined()
+    expect(parsedErr.Err).toBeDefined()
+    expect(parsedErr._trace).toBeInstanceOf(Array)
+  })
+
+  it("should preserve and extend error chain across serialization", () => {
+    interface AppError {
+      code: string
+      message: string
+    }
+
+    function serviceA(): Result<string, AppError> {
+      return Err({ code: "SERVICE_A_ERROR", message: "Something went wrong in A" })
+    }
+
+    function serviceB(): Result<number, AppError> {
+      const result = serviceA()
+      if (result.isErr) {
+        return Err(result)
+      }
+      return Ok(42)
+    }
+
+    const originalResult = serviceB()
+    expect(originalResult.isErr).toBe(true)
+    if (!originalResult.isErr) return
+
+    const originalTrace = trace(originalResult)
+    expect(originalTrace.length).toBe(2)
+
+    // Simulate sending over the wire
+    const serialized = JSON.stringify(originalResult)
+    const deserialized = JSON.parse(serialized) as typeof originalResult
+
+    // Verify structure is preserved
+    expect(deserialized.isErr).toBe(true)
+    expect(deserialized.Err).toEqual({ code: "SERVICE_A_ERROR", message: "Something went wrong in A" })
+    expect(deserialized._trace).toEqual(originalTrace)
+
+    // Continue the chain on the receiving side
+    function handleRemoteError(): Result<string, AppError> {
+      return Err(deserialized)
+    }
+
+    const continuedResult = handleRemoteError()
+    expect(continuedResult.isErr).toBe(true)
+    if (!continuedResult.isErr) return
+
+    const continuedTrace = trace(continuedResult)
+    console.log("Continued trace:", continuedTrace)
+
+    // Should have original 2 call sites + 1 new one from handleRemoteError
+    expect(continuedTrace.length).toBe(3)
+    expect(continuedTrace[0]).toEqual(originalTrace[0])
+    expect(continuedTrace[1]).toEqual(originalTrace[1])
+    expect(continuedTrace[2].functionName).toBe("handleRemoteError")
+
+    // Error value should be preserved
+    expect(continuedResult.Err).toEqual({ code: "SERVICE_A_ERROR", message: "Something went wrong in A" })
   })
 })

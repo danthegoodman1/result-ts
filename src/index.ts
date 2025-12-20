@@ -5,38 +5,6 @@
  * See: https://doc.rust-lang.org/std/result/enum.Result.html
  */
 
-class OkImpl<O, E> {
-  readonly isOk = true as const
-  readonly isErr = false as const
-  readonly Ok: O
-  readonly Err = undefined
-
-  constructor(value: O) {
-    this.Ok = value
-  }
-
-  /**
-   * Returns the contained Ok value.
-   */
-  unwrap(): O {
-    return this.Ok
-  }
-
-  /**
-   * Throws an error because the value is an Ok.
-   */
-  unwrapErr(): E {
-    throw new Error("Called `unwrapErr()` on an `Ok` value")
-  }
-
-  /**
-   * Pattern matches on the `Ok` value.
-   */
-  match<T>(handlers: { Ok: (value: O) => T; Err: (error: E) => T }): T {
-    return handlers.Ok(this.Ok)
-  }
-}
-
 /**
  * The location where an error was created.
  */
@@ -46,56 +14,30 @@ export interface CallSite {
   functionName?: string
 }
 
-class ErrImpl<O, E> {
-  readonly isOk = false as const
-  readonly isErr = true as const
-  readonly Ok = undefined
+interface OkResult<O> {
+  readonly isOk: true
+  readonly isErr: false
+  readonly Ok: O
+  readonly Err: undefined
+}
+
+interface ErrResult<E> {
+  readonly isOk: false
+  readonly isErr: true
+  readonly Ok: undefined
   readonly Err: E
-  private readonly _trace: CallSite[]
-
-  constructor(error: E, trace: CallSite[]) {
-    this.Err = error
-    this._trace = trace
-  }
-
-  /**
-   * Throws an error because the value is an Err.
-   */
-  unwrap(): O {
-    throw new Error("Called `unwrap()` on an `Err` value")
-  }
-
-  /**
-   * Returns the contained Err value.
-   */
-  unwrapErr(): E {
-    return this.Err
-  }
-
-  /**
-   * Returns the trace of call sites for this error (original error to current caller)
-   */
-  trace(): CallSite[] {
-    return this._trace
-  }
-
-  /**
-   * Pattern matches on the `Err` value.
-   */
-  match<T>(handlers: { Ok: (value: O) => T; Err: (error: E) => T }): T {
-    return handlers.Err(this.Err)
-  }
+  readonly _trace: CallSite[]
 }
 
 /**
  * A type that represents either success (`Ok`) or failure (`Err`).
- * `Result<O, E>` is a union of two types, `OkImpl<O, E>` and `ErrImpl<O, E>`.
+ * `Result<O, E>` is a discriminated union of `OkResult<O>` and `ErrResult<E>`.
  * This is a TypeScript implementation of Rust's `Result` enum.
  *
  * @see {@link Ok}
  * @see {@link Err}
  */
-export type Result<O = void, E = Error> = OkImpl<O, E> | ErrImpl<O, E>
+export type Result<O = void, E = Error> = OkResult<O> | ErrResult<E>
 
 /**
  * Creates a new `Ok` result.
@@ -104,7 +46,12 @@ export type Result<O = void, E = Error> = OkImpl<O, E> | ErrImpl<O, E>
 export function Ok<E = never>(): Result<void, E>
 export function Ok<S, E = never>(value: S): Result<S, E>
 export function Ok<S, E = never>(value?: S): Result<S | void, E> {
-  return new OkImpl(arguments.length === 0 ? (undefined as any) : (value as S))
+  return {
+    isOk: true,
+    isErr: false,
+    Ok: arguments.length === 0 ? undefined : value,
+    Err: undefined,
+  } as Result<S | void, E>
 }
 
 function getCallSite(): CallSite | undefined {
@@ -165,16 +112,25 @@ function getCallSite(): CallSite | undefined {
   return undefined
 }
 
+function isErrResult<E>(value: unknown): value is ErrResult<E> {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "isErr" in value &&
+    (value as ErrResult<E>).isErr === true
+  )
+}
+
 /**
  * Creates a new `Err` result.
  * @param error The error to wrap in the result.
  */
-export function Err<E, S = never>(error: E | ErrImpl<any, E>): Result<S, E> {
+export function Err<E, S = never>(error: E | ErrResult<E>): Result<S, E> {
   const newCallSite = getCallSite()
-  let trace = newCallSite ? [newCallSite] : []
+  let resultTrace = newCallSite ? [newCallSite] : []
 
-  if (error instanceof ErrImpl) {
-    trace = [...error.trace(), ...trace]
+  if (isErrResult<E>(error)) {
+    resultTrace = [...error._trace, ...resultTrace]
     error = error.Err
   }
 
@@ -182,16 +138,66 @@ export function Err<E, S = never>(error: E | ErrImpl<any, E>): Result<S, E> {
     error &&
     typeof error === "object" &&
     "cause" in error &&
-    (error as any).cause
+    (error as { cause?: unknown }).cause
   ) {
-    const cause = (error as any).cause
-    if ((cause instanceof OkImpl || cause instanceof ErrImpl) && cause.isErr) {
-      const previousTrace = (cause as any).trace ? (cause as any).trace() : []
-      trace = newCallSite ? [newCallSite, ...previousTrace] : previousTrace
+    const cause = (error as { cause: unknown }).cause
+    if (isErrResult(cause)) {
+      const previousTrace = cause._trace
+      resultTrace = newCallSite ? [newCallSite, ...previousTrace] : previousTrace
     }
   }
 
-  return new ErrImpl(error, trace)
+  return {
+    isOk: false,
+    isErr: true,
+    Ok: undefined,
+    Err: error,
+    _trace: resultTrace,
+  }
+}
+
+/**
+ * Returns the contained Ok value, or throws if the result is an Err.
+ */
+export function unwrap<O>(result: Result<O, unknown>): O {
+  if (result.isOk) {
+    return result.Ok
+  }
+  throw new Error("Called `unwrap()` on an `Err` value")
+}
+
+/**
+ * Returns the contained Err value, or throws if the result is an Ok.
+ */
+export function unwrapErr<E>(result: Result<unknown, E>): E {
+  if (result.isErr) {
+    return result.Err
+  }
+  throw new Error("Called `unwrapErr()` on an `Ok` value")
+}
+
+/**
+ * Returns the trace of call sites for this error (original error to current caller).
+ * Returns an empty array if the result is Ok.
+ */
+export function trace(result: Result<unknown, unknown>): CallSite[] {
+  if (result.isErr) {
+    return result._trace
+  }
+  return []
+}
+
+/**
+ * Pattern matches on the Result, calling the appropriate handler.
+ */
+export function match<O, E, T>(
+  result: Result<O, E>,
+  handlers: { Ok: (value: O) => T; Err: (error: E) => T }
+): T {
+  if (result.isOk) {
+    return handlers.Ok(result.Ok)
+  }
+  return handlers.Err(result.Err)
 }
 
 /**

@@ -1,8 +1,8 @@
 {
   "name": "@danthegoodman/result-ts",
-  "version": "0.0.3",
+  "version": "0.1.0",
   "type": "module",
-  "description": "Rust-style Result type for TypeScript",
+  "description": "Rust-style serializableResult type for TypeScript",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {

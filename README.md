@@ -1,6 +1,6 @@
 # result-ts
 
-Rust-style Result types in TypeScript
+Rust-style Result types in TypeScript. JSON-serializable with automatic error chain tracing.
 
 Follows the Rust Result type: https://doc.rust-lang.org/std/result/enum.Result.html
 
@@ -9,7 +9,7 @@ npm i @danthegoodman/result-ts
 ```
 
 ```ts
-import { Ok, Err, Throwable, type Result } from '@danthegoodman/result-ts'
+import { Ok, Err, Throwable, match, trace, type Result } from '@danthegoodman/result-ts'
 
 // Basic usage
 function divide(a: number, b: number): Result<number, string> {
@@ -33,46 +33,90 @@ const parseJSON = (json: string): Result<any, Error> =>
 const validJson = parseJSON('{"name": "Alice"}')
 const invalidJson = parseJSON('invalid json')
 
-validJson.match({
+match(validJson, {
   Ok: (data) => console.log("Parsed:", data), // Parsed: { name: "Alice" }
   Err: (error) => console.log("Parse error:", error.message)
 })
 
-invalidJson.match({
+match(invalidJson, {
   Ok: (data) => console.log("Parsed:", data),
   Err: (error) => console.log("Parse error:", error.message) // Parse error: Unexpected token 'i'...
 })
 ```
 
+## JSON Serialization
+
+Result objects are plain JavaScript objects, making them fully JSON-serializable:
+
+```ts
+const result = Err({ code: "NOT_FOUND", message: "User not found" })
+
+// Serialize and send over the wire
+const json = JSON.stringify(result)
+
+// Deserialize on the receiving end
+const parsed = JSON.parse(json)
+
+// Continue the error chain
+if (parsed.isErr) {
+  return Err(parsed) // Trace is preserved and extended
+}
+```
+
 ## Automatic error chaining
 
-Result will automatically build Err chains when you call `Err()`
+Result will automatically build Err chains when you call `Err()`. Use `trace()` to get the call stack:
+
+```ts
+function inner(): Result<string> {
+  return Err(new Error("inner failure"))
+}
+
+function outer(): Result<number> {
+  const result = inner()
+  if (result.isErr) {
+    return Err(result)
+  }
+  return Ok(123)
+}
+
+const result = outer()
+if (result.isErr) {
+  console.log("Error:", result.Err.message)
+  console.log("Trace:", trace(result))
+}
+```
+
+Output:
 
 ```
 Error: inner failure
 Trace: [
-  {
-    functionName: 'inner',
-    file: '/Users/dangoodman/tangiaCode/SeniorCare/webapp/src/packages/result/index.test.ts',
-    line: 25
-  },
-  {
-    functionName: 'outer',
-    file: '/Users/dangoodman/tangiaCode/SeniorCare/webapp/src/packages/result/index.test.ts',
-    line: 31
-  },
-  {
-    functionName: undefined,
-    file: '/Users/dangoodman/tangiaCode/SeniorCare/webapp/src/packages/result/index.test.ts',
-    line: 38
-  }
+  { functionName: 'inner', file: '...', line: 25 },
+  { functionName: 'outer', file: '...', line: 31 }
 ]
 ```
 
-So when you have an error, if you want to propagate it up (like rust `?`), wrap the `Result` in an `Err()`:
+To propagate errors up the stack (like Rust's `?` operator), wrap the Result in `Err()`:
 
 ```ts
 if (someResult.isErr) {
   return Err(someResult)
 }
 ```
+
+## API
+
+### Factory Functions
+
+- `Ok(value)` - Create a successful result
+- `Err(error)` - Create an error result (also accepts another `ErrResult` to chain)
+- `Throwable(fn)` - Wrap a function that may throw in a Result
+- `AsyncThrowable(fn)` - Wrap an async function that may throw in a Promise<Result>
+
+### Utility Functions
+
+- `unwrap(result)` - Get the Ok value or throw
+- `unwrapErr(result)` - Get the Err value or throw
+- `match(result, { Ok, Err })` - Pattern match on the result
+- `trace(result)` - Get the call site trace for an error
