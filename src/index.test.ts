@@ -50,17 +50,17 @@ describe("Result", () => {
     // Trace: [
     //   {
     //     functionName: 'inner',
-    //     file: '/Users/dangoodman/tangiaCode/SeniorCare/webapp/src/packages/result/index.test.ts',
+    //     file: '/Users/dangoodman/code/result-ts/src/index.test.ts',
     //     line: 25
     //   },
     //   {
     //     functionName: 'outer',
-    //     file: '/Users/dangoodman/tangiaCode/SeniorCare/webapp/src/packages/result/index.test.ts',
+    //     file: '/Users/dangoodman/code/result-ts/src/index.test.ts',
     //     line: 31
     //   },
     //   {
     //     functionName: undefined,
-    //     file: '/Users/dangoodman/tangiaCode/SeniorCare/webapp/src/packages/result/index.test.ts',
+    //     file: '/Users/dangoodman/code/result-ts/src/index.test.ts',
     //     line: 38
     //   }
     // ]
