@@ -122,6 +122,24 @@ function isErrResult<E>(value: unknown): value is ErrResult<E> {
 }
 
 /**
+ * Type guard to check if a value is a Result type.
+ * @param value The value to check.
+ * @returns `true` if the value is a Result, `false` otherwise.
+ */
+export function isResult<O = unknown, E = unknown>(
+  value: unknown
+): value is Result<O, E> {
+  if (typeof value !== "object" || value === null) {
+    return false
+  }
+  const obj = value as Record<string, unknown>
+  return (
+    (obj.isOk === true && obj.isErr === false) ||
+    (obj.isOk === false && obj.isErr === true)
+  )
+}
+
+/**
  * Creates a new `Err` result.
  * @param error The error to wrap in the result.
  */
@@ -143,7 +161,9 @@ export function Err<E, S = never>(error: E | ErrResult<E>): Result<S, E> {
     const cause = (error as { cause: unknown }).cause
     if (isErrResult(cause)) {
       const previousTrace = cause._trace
-      resultTrace = newCallSite ? [newCallSite, ...previousTrace] : previousTrace
+      resultTrace = newCallSite
+        ? [newCallSite, ...previousTrace]
+        : previousTrace
     }
   }
 
