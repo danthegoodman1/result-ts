@@ -9,7 +9,7 @@ npm i @danthegoodman/result-ts
 ```
 
 ```ts
-import { Ok, Err, Throwable, match, trace, type Result } from '@danthegoodman/result-ts'
+import { Ok, Err, Throwable, match, trace, tryUnwrap, isResult, type Result } from '@danthegoodman/result-ts'
 
 // Basic usage
 function divide(a: number, b: number): Result<number, string> {
@@ -105,6 +105,22 @@ if (someResult.isErr) {
 }
 ```
 
+## The `?` Operator Pattern
+
+Use `tryUnwrap` to mimic Rust's `?` operator. It returns the Ok value or throws the Err value:
+
+```ts
+function processData(): Result<Output, Error> {
+  try {
+    const a = tryUnwrap(stepOne())   // throws if Err
+    const b = tryUnwrap(stepTwo(a))  // throws if Err
+    return Ok(transform(b))
+  } catch (err) {
+    return Err(err as Error)
+  }
+}
+```
+
 ## API
 
 ### Factory Functions
@@ -116,9 +132,12 @@ if (someResult.isErr) {
 
 ### Utility Functions
 
-- `unwrap(result)` - Get the Ok value or throw
-- `unwrapErr(result)` - Get the Err value or throw
+- `unwrap(result)` - Get the Ok value or throw an error
+- `tryUnwrap(result)` - Get the Ok value or throw the Err value (like Rust's `?`)
+- `unwrapErr(result)` - Get the Err value or throw an error
+- `tryUnwrapErr(result)` - Get the Err value or throw the Ok value
 - `match(result, { Ok, Err })` - Pattern match on the result
 - `map(result, fn)` - Transform the Ok value with a function returning Result
 - `mapErr(result, fn)` - Transform the Err value with a function returning Result
 - `trace(result)` - Get the call site trace for an error
+- `isResult(value)` - Type guard to check if a value is a Result
