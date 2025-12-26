@@ -187,6 +187,17 @@ export function unwrap<O>(result: Result<O, unknown>): O {
 }
 
 /**
+ * Returns the contained Ok value, or throws the Err value if the result is an Err.
+ * This is similar to Rust's `?` operator for propagating errors.
+ */
+export function tryUnwrap<O, E>(result: Result<O, E>): O {
+  if (result.isOk) {
+    return result.Ok
+  }
+  throw result.Err
+}
+
+/**
  * Returns the contained Err value, or throws if the result is an Ok.
  */
 export function unwrapErr<E>(result: Result<unknown, E>): E {
@@ -194,6 +205,16 @@ export function unwrapErr<E>(result: Result<unknown, E>): E {
     return result.Err
   }
   throw new Error("Called `unwrapErr()` on an `Ok` value")
+}
+
+/**
+ * Returns the contained Err value, or throws the Ok value if the result is an Ok.
+ */
+export function tryUnwrapErr<O, E>(result: Result<O, E>): E {
+  if (result.isErr) {
+    return result.Err
+  }
+  throw result.Ok
 }
 
 /**
