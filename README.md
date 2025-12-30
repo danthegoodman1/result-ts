@@ -107,17 +107,15 @@ if (someResult.isErr) {
 
 ## The `?` Operator Pattern
 
-Use `tryUnwrap` to mimic Rust's `?` operator. It returns the Ok value or throws the Err value:
+Use `tryUnwrap` inside `Throwable` to mimic Rust's `?` operator. `tryUnwrap` returns the Ok value or throws the Err value, and `Throwable` catches and wraps it back into a Result:
 
 ```ts
 function processData(): Result<Output, Error> {
-  try {
+  return Throwable(() => { // Catches the throw and returns Err
     const a = tryUnwrap(stepOne())   // throws if Err
     const b = tryUnwrap(stepTwo(a))  // throws if Err
-    return Ok(transform(b))
-  } catch (err) {
-    return Err(err as Error)
-  }
+    return b
+  })
 }
 ```
 
