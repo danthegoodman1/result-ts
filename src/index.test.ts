@@ -21,11 +21,11 @@ describe("Result", () => {
       Err: (_error) => -1,
     })
 
-    function inner(): Result<string> {
+    function inner(): Result<string, Error> {
       return Err(new Error("inner failure"))
     }
 
-    function outer(): Result<number> {
+    function outer(): Result<number, Error> {
       const innerResult = inner()
       if (innerResult.isErr) {
         return Err(innerResult)

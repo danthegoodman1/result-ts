@@ -37,7 +37,7 @@ interface ErrResult<E> {
  * @see {@link Ok}
  * @see {@link Err}
  */
-export type Result<O = void, E = Error> = OkResult<O> | ErrResult<E>
+export type Result<O = void, E = unknown> = OkResult<O> | ErrResult<E>
 
 /**
  * Creates a new `Ok` result.
