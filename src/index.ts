@@ -177,20 +177,10 @@ export function Err<E, S = never>(error: E | ErrResult<E>): Result<S, E> {
 }
 
 /**
- * Returns the contained Ok value, or throws if the result is an Err.
- */
-export function unwrap<O>(result: Result<O, unknown>): O {
-  if (result.isOk) {
-    return result.Ok
-  }
-  throw new Error("Called `unwrap()` on an `Err` value")
-}
-
-/**
  * Returns the contained Ok value, or throws the Err value if the result is an Err.
  * This is similar to Rust's `?` operator for propagating errors.
  */
-export function tryUnwrap<O, E>(result: Result<O, E>): O {
+export function unwrap<O, E>(result: Result<O, E>): O {
   if (result.isOk) {
     return result.Ok
   }
@@ -198,23 +188,33 @@ export function tryUnwrap<O, E>(result: Result<O, E>): O {
 }
 
 /**
- * Returns the contained Err value, or throws if the result is an Ok.
+ * Returns the contained Ok value, or throws an Error with the provided message if the result is an Err.
  */
-export function unwrapErr<E>(result: Result<unknown, E>): E {
-  if (result.isErr) {
-    return result.Err
+export function expect<O>(result: Result<O, unknown>, message: string): O {
+  if (result.isOk) {
+    return result.Ok
   }
-  throw new Error("Called `unwrapErr()` on an `Ok` value")
+  throw new Error(message)
 }
 
 /**
  * Returns the contained Err value, or throws the Ok value if the result is an Ok.
  */
-export function tryUnwrapErr<O, E>(result: Result<O, E>): E {
+export function unwrapErr<O, E>(result: Result<O, E>): E {
   if (result.isErr) {
     return result.Err
   }
   throw result.Ok
+}
+
+/**
+ * Returns the contained Err value, or throws an Error with the provided message if the result is an Ok.
+ */
+export function expectErr<E>(result: Result<unknown, E>, message: string): E {
+  if (result.isErr) {
+    return result.Err
+  }
+  throw new Error(message)
 }
 
 /**

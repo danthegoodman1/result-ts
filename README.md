@@ -9,7 +9,7 @@ npm i @danthegoodman/result-ts
 ```
 
 ```ts
-import { Ok, Err, Throwable, match, trace, tryUnwrap, isResult, type Result } from '@danthegoodman/result-ts'
+import { Ok, Err, Throwable, match, trace, unwrap, isResult, type Result } from '@danthegoodman/result-ts'
 
 // Basic usage
 function divide(a: number, b: number): Result<number, string> {
@@ -107,13 +107,13 @@ if (someResult.isErr) {
 
 ## The `?` Operator Pattern
 
-Use `tryUnwrap` inside `Throwable` to mimic Rust's `?` operator. `tryUnwrap` returns the Ok value or throws the Err value, and `Throwable` catches and wraps it back into a Result:
+Use `unwrap` inside `Throwable` to mimic Rust's `?` operator. `unwrap` returns the Ok value or throws the Err value, and `Throwable` catches and wraps it back into a Result:
 
 ```ts
 function processData(): Result<Output, Error> {
   return Throwable(() => { // Catches the throw and returns Err
-    const a = tryUnwrap(stepOne())   // throws if Err
-    const b = tryUnwrap(stepTwo(a))  // throws if Err
+    const a = unwrap(stepOne())   // throws if Err
+    const b = unwrap(stepTwo(a))  // throws if Err
     return b
   })
 }
@@ -130,10 +130,10 @@ function processData(): Result<Output, Error> {
 
 ### Utility Functions
 
-- `unwrap(result)` - Get the Ok value or throw an error
-- `tryUnwrap(result)` - Get the Ok value or throw the Err value (like Rust's `?`)
-- `unwrapErr(result)` - Get the Err value or throw an error
-- `tryUnwrapErr(result)` - Get the Err value or throw the Ok value
+- `unwrap(result)` - Get the Ok value or throw the Err value (like Rust's `?`)
+- `expect(result, message)` - Get the Ok value or throw an Error with the provided message
+- `unwrapErr(result)` - Get the Err value or throw the Ok value
+- `expectErr(result, message)` - Get the Err value or throw an Error with the provided message
 - `match(result, { Ok, Err })` - Pattern match on the result
 - `map(result, fn)` - Transform the Ok value with a function returning Result
 - `mapErr(result, fn)` - Transform the Err value with a function returning Result
