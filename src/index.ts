@@ -12,6 +12,7 @@ export interface CallSite {
   file: string
   line: number
   functionName?: string
+  context?: string
 }
 
 interface OkResult<O> {
@@ -142,9 +143,16 @@ export function isResult<O = unknown, E = unknown>(
 /**
  * Creates a new `Err` result.
  * @param error The error to wrap in the result.
+ * @param context Optional context string for environments where stack traces aren't available.
  */
-export function Err<E, S = never>(error: E | ErrResult<E>): Result<S, E> {
+export function Err<E, S = never>(
+  error: E | ErrResult<E>,
+  context?: string
+): Result<S, E> {
   const newCallSite = getCallSite()
+  if (newCallSite && context) {
+    newCallSite.context = context
+  }
   let resultTrace = newCallSite ? [newCallSite] : []
 
   if (isErrResult<E>(error)) {
@@ -179,10 +187,14 @@ export function Err<E, S = never>(error: E | ErrResult<E>): Result<S, E> {
 /**
  * Returns the contained Ok value, or throws the Err value if the result is an Err.
  * This is similar to Rust's `?` operator for propagating errors.
+ * @param context Optional context string for environments where stack traces aren't available.
  */
-export function unwrap<O, E>(result: Result<O, E>): O {
+export function unwrap<O, E>(result: Result<O, E>, context?: string): O {
   if (result.isOk) {
     return result.Ok
+  }
+  if (context) {
+    result = Err(result, context)
   }
   throw result.Err
 }

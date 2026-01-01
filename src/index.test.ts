@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { Ok, Err, type Result, match, trace, map, mapErr } from "./index.js"
+import { Ok, Err, type Result, match, trace, map, mapErr, unwrap } from "./index.js"
 
 describe("Result", () => {
   it("should chain errors", () => {
@@ -162,5 +162,63 @@ describe("Result", () => {
     const ok = Ok<number, string>(5)
     const mappedOk = mapErr(ok, () => Err("new error"))
     expect(mappedOk.isOk && mappedOk.Ok).toBe(5)
+  })
+
+  it("Err() accepts optional context string", () => {
+    const err = Err(new Error("failed"), "while loading config")
+    expect(err.isErr).toBe(true)
+    if (!err.isErr) return
+
+    const errorTrace = trace(err)
+    expect(errorTrace.length).toBe(1)
+    expect(errorTrace[0].context).toBe("while loading config")
+  })
+
+  it("context propagates through error chain", () => {
+    function inner(): Result<string, Error> {
+      return Err(new Error("db connection failed"), "connecting to database")
+    }
+
+    function outer(): Result<number, Error> {
+      const result = inner()
+      if (result.isErr) {
+        return Err(result, "in user service")
+      }
+      return Ok(42)
+    }
+
+    const result = outer()
+    expect(result.isErr).toBe(true)
+    if (!result.isErr) return
+
+    const errorTrace = trace(result)
+    expect(errorTrace.length).toBe(2)
+    expect(errorTrace[0].context).toBe("connecting to database")
+    expect(errorTrace[1].context).toBe("in user service")
+  })
+
+  it("unwrap with context adds to trace before throwing", () => {
+    function fetchData(): Result<string, Error> {
+      return Err(new Error("network error"), "fetching from API")
+    }
+
+    function processData(): Result<number, Error> {
+      try {
+        const data = unwrap(fetchData(), "in processData handler")
+        return Ok(data.length)
+      } catch (e) {
+        throw e
+      }
+    }
+
+    expect(() => processData()).toThrow("network error")
+  })
+
+  it("unwrap without context still works", () => {
+    const ok = Ok(42)
+    expect(unwrap(ok)).toBe(42)
+
+    const err = Err(new Error("fail"))
+    expect(() => unwrap(err)).toThrow("fail")
   })
 })
