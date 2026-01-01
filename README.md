@@ -97,6 +97,35 @@ Trace: [
 ]
 ```
 
+### Context strings
+
+In environments where stack traces aren't available (e.g. base V8 engines), you can add an optional context string to `Err()` and `unwrap()`:
+
+```ts
+function fetchUser(id: string): Result<User, Error> {
+  const result = db.query(id)
+  if (result.isErr) {
+    return Err(result, "fetching user from database")
+  }
+  return Ok(result.Ok)
+}
+
+function handleRequest(): Result<Response, Error> {
+  const user = unwrap(fetchUser("123"), "in handleRequest")
+  return Ok({ user })
+}
+```
+
+The context appears in the trace alongside file/line info:
+
+```ts
+trace(result)
+// [
+//   { file: '...', line: 10, context: 'fetching user from database' },
+//   { file: '...', line: 20, context: 'in handleRequest' }
+// ]
+```
+
 To propagate errors up the stack (like Rust's `?` operator), wrap the Result in `Err()`:
 
 ```ts
@@ -124,13 +153,13 @@ function processData(): Result<Output, Error> {
 ### Factory Functions
 
 - `Ok(value)` - Create a successful result
-- `Err(error)` - Create an error result (also accepts another `ErrResult` to chain)
+- `Err(error, context?)` - Create an error result (also accepts another `ErrResult` to chain)
 - `Throwable(fn)` - Wrap a function that may throw in a Result
 - `AsyncThrowable(fn)` - Wrap an async function that may throw in a Promise<Result>
 
 ### Utility Functions
 
-- `unwrap(result)` - Get the Ok value or throw the Err value (like Rust's `?`)
+- `unwrap(result, context?)` - Get the Ok value or throw the Err value (like Rust's `?`)
 - `expect(result, message)` - Get the Ok value or throw an Error with the provided message
 - `unwrapErr(result)` - Get the Err value or throw the Ok value
 - `expectErr(result, message)` - Get the Err value or throw an Error with the provided message
