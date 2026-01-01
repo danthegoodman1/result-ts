@@ -241,6 +241,23 @@ export function trace(result: Result<unknown, unknown>): CallSite[] {
 }
 
 /**
+ * Returns a new Result with the traces stripped.
+ * Useful for serialization or when traces are not needed.
+ */
+export function withoutTraces<O, E>(result: Result<O, E>): Result<O, E> {
+  if (result.isOk) {
+    return result
+  }
+  return {
+    isOk: false,
+    isErr: true,
+    Ok: undefined,
+    Err: result.Err,
+    _trace: [],
+  }
+}
+
+/**
  * Pattern matches on the Result, calling the appropriate handler.
  */
 export function match<O, E, T>(

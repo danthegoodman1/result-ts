@@ -167,4 +167,5 @@ function processData(): Result<Output, Error> {
 - `map(result, fn)` - Transform the Ok value with a function returning Result
 - `mapErr(result, fn)` - Transform the Err value with a function returning Result
 - `trace(result)` - Get the call site trace for an error
+- `withoutTraces(result)` - Return a new Result with traces stripped
 - `isResult(value)` - Type guard to check if a value is a Result

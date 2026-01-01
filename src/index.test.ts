@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { Ok, Err, type Result, match, trace, map, mapErr, unwrap } from "./index.js"
+import { Ok, Err, type Result, match, trace, map, mapErr, unwrap, withoutTraces } from "./index.js"
 
 describe("Result", () => {
   it("should chain errors", () => {
@@ -220,5 +220,39 @@ describe("Result", () => {
 
     const err = Err(new Error("fail"))
     expect(() => unwrap(err)).toThrow("fail")
+  })
+
+  it("withoutTraces strips traces from Err", () => {
+    function inner(): Result<string, Error> {
+      return Err(new Error("error"))
+    }
+
+    function outer(): Result<number, Error> {
+      const result = inner()
+      if (result.isErr) {
+        return Err(result)
+      }
+      return Ok(42)
+    }
+
+    const result = outer()
+    expect(result.isErr).toBe(true)
+    if (!result.isErr) return
+
+    expect(trace(result).length).toBe(2)
+
+    const stripped = withoutTraces(result)
+    expect(stripped.isErr).toBe(true)
+    if (!stripped.isErr) return
+
+    expect(trace(stripped)).toEqual([])
+    expect(stripped.Err.message).toBe("error")
+  })
+
+  it("withoutTraces returns Ok unchanged", () => {
+    const ok = Ok(42)
+    const result = withoutTraces(ok)
+    expect(result).toBe(ok)
+    expect(result.isOk && result.Ok).toBe(42)
   })
 })
