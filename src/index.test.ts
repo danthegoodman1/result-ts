@@ -211,7 +211,19 @@ describe("Result", () => {
       }
     }
 
-    expect(() => processData()).toThrow("network error")
+    try {
+      processData()
+      expect.fail("should have thrown")
+    } catch (e) {
+      const thrown = e as Result<number, Error>
+      expect(thrown.isErr).toBe(true)
+      if (!thrown.isErr) return
+      expect(thrown.Err.message).toBe("network error")
+      const errorTrace = trace(thrown)
+      expect(errorTrace.length).toBe(2)
+      expect(errorTrace[0].context).toBe("fetching from API")
+      expect(errorTrace[1].context).toBe("in processData handler")
+    }
   })
 
   it("unwrap without context still works", () => {
@@ -219,7 +231,15 @@ describe("Result", () => {
     expect(unwrap(ok)).toBe(42)
 
     const err = Err(new Error("fail"))
-    expect(() => unwrap(err)).toThrow("fail")
+    try {
+      unwrap(err)
+      expect.fail("should have thrown")
+    } catch (e) {
+      const thrown = e as Result<number, Error>
+      expect(thrown.isErr).toBe(true)
+      if (!thrown.isErr) return
+      expect(thrown.Err.message).toBe("fail")
+    }
   })
 
   it("withoutTraces strips traces from Err", () => {

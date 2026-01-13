@@ -136,17 +136,19 @@ if (someResult.isErr) {
 
 ## The `?` Operator Pattern
 
-Use `unwrap` inside `Throwable` to mimic Rust's `?` operator. `unwrap` returns the Ok value or throws the Err value, and `Throwable` catches and wraps it back into a Result:
+Use `unwrap` inside `Throwable` to mimic Rust's `?` operator. `unwrap` returns the Ok value or throws the Result itself if it's an Err, and `Throwable` catches and re-wraps it:
 
 ```ts
 function processData(): Result<Output, Error> {
-  return Throwable(() => { // Catches the throw and returns Err
-    const a = unwrap(stepOne())   // throws if Err
-    const b = unwrap(stepTwo(a))  // throws if Err
+  return Throwable(() => { // Catches the thrown Result and returns it
+    const a = unwrap(stepOne())   // throws Result if Err
+    const b = unwrap(stepTwo(a))  // throws Result if Err
     return b
   })
 }
 ```
+
+Since `unwrap` throws the Result (not the underlying error), traces are preserved through the throw/catch cycle.
 
 ## API
 
@@ -159,7 +161,7 @@ function processData(): Result<Output, Error> {
 
 ### Utility Functions
 
-- `unwrap(result, context?)` - Get the Ok value or throw the Err value (like Rust's `?`)
+- `unwrap(result, context?)` - Get the Ok value or throw the Result (like Rust's `?`)
 - `expect(result, message)` - Get the Ok value or throw an Error with the provided message
 - `unwrapErr(result)` - Get the Err value or throw the Ok value
 - `expectErr(result, message)` - Get the Err value or throw an Error with the provided message

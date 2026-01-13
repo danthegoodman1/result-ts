@@ -185,7 +185,7 @@ export function Err<E, S = never>(
 }
 
 /**
- * Returns the contained Ok value, or throws the Err value if the result is an Err.
+ * Returns the contained Ok value, or throws the Result if the result is an Err.
  * This is similar to Rust's `?` operator for propagating errors.
  * @param context Optional context string for environments where stack traces aren't available.
  */
@@ -196,7 +196,7 @@ export function unwrap<O, E>(result: Result<O, E>, context?: string): O {
   if (context) {
     result = Err(result, context)
   }
-  throw result.Err
+  throw result
 }
 
 /**
